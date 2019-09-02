@@ -1,0 +1,98 @@
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="authority_management_list">
+            <field name="name">authority management list</field>
+            <field name="model">authority.management</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="authority_management_form">
+            <field name="name">authority management form</field>
+            <field name="model">authority.management</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                        <button name="create_access_file" string="Create Model file" type="object" class="oe_highlight" />
+                        <button name="create_menu_groups" string="Create Menu file" type="object" class="oe_highlight" />
+                    </header>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="groups_id"/>
+<!--                            <field name="view_menu_ids"  widget="many2many_tags"/>-->
+                            <field name="menu_access_ids">
+                                <tree editable="1">
+                                    <field name="menu_id"/>
+                                    <field name="perm_read"/>
+                                    <field name="perm_write"/>
+                                    <field name="perm_create"/>
+                                    <field name="perm_unlink"/>
+                                </tree>
+                            </field>
+<!--                            <field name="perm_read"/>-->
+<!--                            <field name="perm_write"/>-->
+<!--                            <field name="perm_create"/>-->
+<!--                            <field name="perm_unlink"/>-->
+                            <field name="access_file" filename="file_name_save"/>
+                            <field name="file_name_save" invisible="1"/>
+                            <field name="menu_file" filename="file_menu_save"/>
+                            <field name="file_menu_save" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="action_ids"  widget="many2many_tags"/>
+                            <field name="menu_ids" widget="many2many_tags"/>
+                            <field name="views_ids" widget="many2many_tags"/>
+                            <field name="access_ids">
+                                <tree>
+                                    <field name="model_id"/>
+                                    <field name="perm_read"/>
+                                    <field name="perm_write"/>
+                                    <field name="perm_create"/>
+                                    <field name="perm_unlink"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                    <!--                    <notebook>-->
+                    <!--                        <page>-->
+                    <!--                            <field name="fields_id">-->
+                    <!--                                <tree>-->
+                    <!--                                    -->
+                    <!--                                </tree>-->
+                    <!--                            </field>-->
+                    <!--                        </page>-->
+                    <!--                    </notebook>-->
+
+                </form>
+            </field>
+        </record>
+
+        <!-- actions opening views on models -->
+
+        <record model="ir.actions.act_window" id="authority_management.action_window">
+            <field name="name">authority management window</field>
+            <field name="res_model">authority.management</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+
+        <!-- Top menu item -->
+
+        <menuitem name="Authority Management" id="authority_management.menu_root"/>
+
+        <!-- menu categories -->
+
+        <menuitem name="Menu 1" id="authority_management.menu_1" parent="authority_management.menu_root"/>
+        <menuitem name="Menu 2" id="authority_management.menu_2" parent="authority_management.menu_root"/>
+
+        <!-- actions -->
+
+        <menuitem name="List" id="authority_management.menu_1_list" parent="authority_management.menu_1"
+                  action="authority_management.action_window"/>
+
+    </data>
+</odoo>
