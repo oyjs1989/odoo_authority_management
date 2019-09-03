@@ -11,32 +11,44 @@ from io import StringIO
 import base64
 
 
-class AccessGroup(models.Model):
+class AccessGroup(models.TransientModel):
     _name = 'authority.management.access'
 
-    rule_id = fields.Many2one('authority.management', required=True)
-    model_id = fields.Many2one('ir.model', required=True)
+    rule_id = fields.Many2one('authority.management', required=True, ondelete='cascade')
+    model_id = fields.Many2one('ir.model', required=True, ondelete='cascade')
     perm_read = fields.Boolean()
     perm_write = fields.Boolean()
     perm_create = fields.Boolean()
     perm_unlink = fields.Boolean()
 
 
-class MenuAuth(models.Model):
+class MenuAuth(models.TransientModel):
     _name = 'menu.access.rule'
+
     menu_id = fields.Many2one('ir.ui.menu', domain=[('child_id', '=', False)])
-    auth_id = fields.Many2one("authority.management")
+    auth_id = fields.Many2one("authority.management", ondelete='cascade')
     perm_read = fields.Boolean(default=True)
     perm_write = fields.Boolean()
     perm_create = fields.Boolean()
     perm_unlink = fields.Boolean()
 
+    @api.constrains('perm_read')
+    def _check_perm_read(self):
+        for rec in self:
+            if not rec.perm_read:
+                raise ValidationError(_('perm read can not be false!'))
 
-class AuthorityManagement(models.Model):
+
+class AuthorityManagement(models.TransientModel):
     _name = "authority.management"
 
-    name = fields.Char()
-    groups_id = fields.Many2one('res.groups')
+    groups_id = fields.Many2one('res.groups', ondelete='cascade')
+
+    exist_implied_ids = fields.Many2many('res.groups', 'auth_group_implied')
+    exist_menu_access = fields.Many2many('ir.ui.menu', 'auth_group_menu')
+    exist_model_access = fields.Many2many('ir.model.access', 'auth_group_model')
+    exist_view_access = fields.Many2many('ir.ui.view', 'auth_group_view')
+
     action_ids = fields.Many2many('ir.actions.act_window')
     views_ids = fields.Many2many('ir.ui.view', 'auth_views_rel')
     access_ids = fields.One2many('authority.management.access', 'rule_id')
@@ -47,6 +59,41 @@ class AuthorityManagement(models.Model):
     file_name_save = fields.Char(string=_('File Name Save'))
     menu_file = fields.Binary()
     file_menu_save = fields.Char(string=_('File Menu Save'))
+
+
+    @api.onchange('groups_id')
+    def _onchange_groups_id(self):
+
+        def get_all_implied_access(implied_ids):
+            groups = self.env['res.groups']
+            menus = self.env['ir.ui.menu']
+            models = self.env['ir.model.access']
+            views = self.env['ir.ui.view']
+            for group in implied_ids:
+                if group.implied_ids:
+                    group, menu, model, view = get_all_implied_access(group.implied_ids)
+                    menus |= menu
+                    models |= model
+                    groups |= group
+                    views |= view
+                else:
+                    groups |= group
+                    menus |= group.menu_access
+                    models |= group.model_access
+                    views |= group.view_access
+            return groups, menus, models, views
+
+        self.exist_implied_ids = None
+        self.exist_menu_access = None
+        self.exist_model_access = None
+        self.exist_view_access = None
+        if self.groups_id:
+            groups, menu, models, views = get_all_implied_access(self.groups_id)
+            self.exist_implied_ids |= groups
+            self.exist_menu_access |= menu
+            self.exist_model_access |= models
+            self.exist_view_access |= views
+
 
     def get_action_from_menu(self, menu):
         return self.env['ir.ui.menu'].browse(menu).mapped('action')
@@ -218,9 +265,9 @@ class AuthorityManagement(models.Model):
                 menus |= up_menu
             return menus
 
+        self.menu_ids = None
+        self.views_ids = None
         if self.menu_access_ids:
-            self.menu_ids = None
-            self.views_ids = None
             self.action_ids = self.menu_access_ids.mapped('menu_id').mapped('action')
             for menu in self.menu_access_ids.mapped('menu_id'):
                 self.menu_ids |= menu
