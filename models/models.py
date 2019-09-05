@@ -96,8 +96,8 @@ class AuthorityManagement(models.TransientModel):
             groups, menu, models, views = get_all_implied_access(self.groups_id)
             self.exist_implied_ids = groups
             self.exist_menu_access = menu
-            self.exist_model_access = models
             self.exist_view_access = views
+            self.exist_model_access = models
             self.exist_menu_access |= self.groups_id.menu_access
             self.exist_model_access |= self.groups_id.model_access
             self.exist_view_access |= self.groups_id.view_access
@@ -161,7 +161,7 @@ class AuthorityManagement(models.TransientModel):
         return acc_info.values()
 
     def get_exist_model_access(self, model_id, read, write, create, unlink):
-        exist_model_access = self.exist_model_access.search([('model_id', '=', model_id)])
+        exist_model_access = self.exist_model_access.filtered(lambda rec: rec.model_id == model_id)
         if not exist_model_access:
             return read, write, create, unlink
         else:
@@ -310,6 +310,8 @@ class AuthorityManagement(models.TransientModel):
         if vals.get('menu_access_ids'):
             menu_access_info = self.get_menu_info(vals.get('menu_access_ids'))
             vals['access_ids'] = self.get_access(menu_access_info)
+        if vals.get('exist_model_access'):
+            vals['exist_model_access'] = [(6, 0, [x[1] for x in vals.get('exist_model_access')])]
         return super(AuthorityManagement, self).write(vals)
 
     @api.model
@@ -317,6 +319,8 @@ class AuthorityManagement(models.TransientModel):
         if vals.get('menu_access_ids'):
             menu_access_info = self.get_menu_info(vals.get('menu_access_ids'))
             vals['access_ids'] = self.get_access(menu_access_info)
+        if vals.get('exist_model_access'):
+            vals['exist_model_access'] = [(6, 0, [x[1] for x in vals.get('exist_model_access')])]
         return super(AuthorityManagement, self).create(vals)
 
     @api.multi

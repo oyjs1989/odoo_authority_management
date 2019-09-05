@@ -27,7 +27,8 @@
                                 <field name="exist_implied_ids" widget="many2many_tags"/>
                                 <field name="exist_menu_access" widget="many2many_tags"/>
                                 <field name="exist_view_access" widget="many2many_tags"/>
-                                <field name="exist_model_access">
+<!--                                <field name="exist_model_access" widget="many2many_tags"/>-->
+                                <field name="exist_model_access" options="{'limit': 10, 'create': false, 'create_edit': false}">
                                     <tree>
                                         <field name="name"/>
                                         <field name="group_id"/>
