@@ -87,12 +87,20 @@ class AuthorityManagement(models.TransientModel):
         self.exist_menu_access = None
         self.exist_model_access = None
         self.exist_view_access = None
+
+        self.access_ids = None
+        self.action_ids = None
+        self.menu_ids = None
+        self.views_ids = None
         if self.groups_id:
             groups, menu, models, views = get_all_implied_access(self.groups_id)
-            self.exist_implied_ids |= groups
-            self.exist_menu_access |= menu
-            self.exist_model_access |= models
-            self.exist_view_access |= views
+            self.exist_implied_ids = groups
+            self.exist_menu_access = menu
+            self.exist_model_access = models
+            self.exist_view_access = views
+            self.exist_menu_access |= self.groups_id.menu_access
+            self.exist_model_access |= self.groups_id.model_access
+            self.exist_view_access |= self.groups_id.view_access
 
 
     def get_action_from_menu(self, menu):
@@ -115,31 +123,49 @@ class AuthorityManagement(models.TransientModel):
             menus |= up_menu
         return menus
 
-    def accumulated_permissions(self, all_access):
+    def accumulated_permissions(self, all_acc):
         '''
         对相同模型的权限去重累加
         :param access:  List
         :return:
         '''
-        access_info = {}
-        for access in all_access:
-            if access.get('model_id') not in access_info:
-                access_info[access.get('model_id')] = {
-                    'model_id': access.get('model_id'),
-                    'perm_read': access.get('perm_read'),
-                    'perm_write': access.get('perm_write'),
-                    'perm_create': access.get('perm_create'),
-                    'perm_unlink': access.get('perm_unlink')}
+        acc_info = {}
+        for acc in all_acc:
+            if acc.get('model_id') not in acc_info:
+                acc_info[acc.get('model_id')] = {
+                    'perm_read': acc.get('perm_read'),
+                    'perm_write': acc.get('perm_write'),
+                    'perm_create': acc.get('perm_create'),
+                    'perm_unlink': acc.get('perm_unlink')}
 
             else:
-                access_info[access.get('model_id')] = {
-                    'model_id': access.get('model_id'),
-                    'perm_read':  access.get('perm_read') if access.get('perm_read') else access_info[access.get('model_id')].get('perm_read'),
-                    'perm_write':  access.get('perm_write') if access.get('perm_write') else access_info[access.get('model_id')].get('perm_write'),
-                    'perm_create':  access.get('perm_create') if access.get('perm_create') else access_info[access.get('model_id')].get('perm_create'),
-                    'perm_unlink':  access.get('perm_unlink') if access.get('perm_unlink') else access_info[access.get('model_id')].get('perm_unlink')}
-        return access_info.values()
+                acc_info[acc.get('model_id')] = {
+                    'perm_read':  acc.get('perm_read') if acc.get('perm_read') else acc_info[acc.get('model_id')].get('perm_read'),
+                    'perm_write':  acc.get('perm_write') if acc.get('perm_write') else acc_info[acc.get('model_id')].get('perm_write'),
+                    'perm_create':  acc.get('perm_create') if acc.get('perm_create') else acc_info[acc.get('model_id')].get('perm_create'),
+                    'perm_unlink':  acc.get('perm_unlink') if acc.get('perm_unlink') else acc_info[acc.get('model_id')].get('perm_unlink')}
 
+            # 根据已有权限取较小权限即可满足要求
+            read, write, create, unlink = self.get_exist_model_access(acc.get('model_id'),
+                                                                      acc_info[acc.get('model_id')].get('perm_read'),
+                                                                      acc_info[acc.get('model_id')].get('perm_write'),
+                                                                      acc_info[acc.get('model_id')].get('perm_create'),
+                                                                      acc_info[acc.get('model_id')].get('perm_unlink'))
+            acc_info[acc.get('model_id')] = {
+                'model_id': acc.get('model_id'),
+                'perm_read': read,
+                'perm_write': write,
+                'perm_create': create,
+                'perm_unlink': unlink}
+
+        return acc_info.values()
+
+    def get_exist_model_access(self, model_id, read, write, create, unlink):
+        exist_model_access = self.exist_model_access.search([('model_id', '=', model_id)])
+        if not exist_model_access:
+            return read, write, create, unlink
+        else:
+            return False if any(exist_model_access.mapped('perm_read')) else read, False if any(exist_model_access.mapped('perm_write')) else write, False if any(exist_model_access.mapped('perm_create')) else create, False if any(exist_model_access.mapped('perm_unlink')) else unlink
 
     def get_access_from_menu(self, menu_id, perm_write, perm_create, perm_read, perm_unlink):
 
@@ -272,10 +298,12 @@ class AuthorityManagement(models.TransientModel):
             for menu in self.menu_access_ids.mapped('menu_id'):
                 self.menu_ids |= menu
                 self.menu_ids |= get_parnets(menu)
+            self.menu_ids -= self.exist_menu_access
             self.views_ids = self.action_ids.mapped('view_id')
             self.views_ids |= self.action_ids.mapped('search_view_id')
             for view in self.action_ids.mapped('view_ids').mapped('view_id'):
                 self.views_ids |= view
+            self.views_ids -= self.exist_view_access
 
     @api.multi
     def write(self, vals):
