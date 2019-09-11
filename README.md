@@ -1,1 +1,2 @@
-# odoo_authority_management
+# Authority Management
+## odoo 权限控制生成

@@ -4,6 +4,7 @@
     'name': "Authority Management",
     'version': "1.0",
     'category': "Tools",
+    'author': "Jason",
     'license':'LGPL-3',
     'depends': ['lumi_base'],
     'data': [

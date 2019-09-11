@@ -95,13 +95,9 @@ class AuthorityManagement(models.TransientModel):
         if self.groups_id:
             groups, menu, models, views = get_all_implied_access(self.groups_id)
             self.exist_implied_ids = groups
-            self.exist_menu_access = menu
-            self.exist_view_access = views
-            self.exist_model_access = models
-            self.exist_menu_access |= self.groups_id.menu_access
-            self.exist_model_access |= self.groups_id.model_access
-            self.exist_view_access |= self.groups_id.view_access
-
+            self.exist_menu_access = menu | self.groups_id.menu_access
+            self.exist_view_access = views | self.groups_id.view_access
+            self.exist_model_access = models | self.groups_id.model_access
 
     def get_action_from_menu(self, menu):
         return self.env['ir.ui.menu'].browse(menu).mapped('action')
@@ -161,7 +157,7 @@ class AuthorityManagement(models.TransientModel):
         return acc_info.values()
 
     def get_exist_model_access(self, model_id, read, write, create, unlink):
-        exist_model_access = self.exist_model_access.filtered(lambda rec: rec.model_id == model_id)
+        exist_model_access = self.exist_model_access.filtered(lambda rec: rec.model_id.id == model_id)
         if not exist_model_access:
             return read, write, create, unlink
         else:

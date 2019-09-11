@@ -22,7 +22,7 @@
                     </header>
                     <sheet>
                         <group>
-                            <group>
+                            <group string="Already have permission">
                                 <field name="groups_id"/>
                                 <field name="exist_implied_ids" widget="many2many_tags"/>
                                 <field name="exist_menu_access" widget="many2many_tags"/>
@@ -40,7 +40,7 @@
                                     </tree>
                                 </field>
                             </group>
-                            <group>
+                            <group string="New permissions">
                                 <field name="menu_access_ids">
                                     <tree editable="1">
                                         <field name="menu_id"/>
@@ -75,7 +75,7 @@
 
         <!-- actions opening views on models -->
 
-        <record model="ir.actions.act_window" id="authority_management.action_window">
+        <record model="ir.actions.act_window" id="authority_management_action_window">
             <field name="name">authority management window</field>
             <field name="res_model">authority.management</field>
             <field name="view_mode">tree,form</field>
@@ -84,17 +84,17 @@
 
         <!-- Top menu item -->
 
-        <menuitem name="Authority Management" id="authority_management.menu_root"/>
+        <menuitem name="Authority Management" id="authority_management_menu_root"/>
 
         <!-- menu categories -->
 
-        <menuitem name="Menu 1" id="authority_management.menu_1" parent="authority_management.menu_root"/>
-        <menuitem name="Menu 2" id="authority_management.menu_2" parent="authority_management.menu_root"/>
+        <menuitem name="Menu 1" id="authority_management_menu_1" parent="authority_management_menu_root"/>
+        <menuitem name="Menu 2" id="authority_management_menu_2" parent="authority_management_menu_root"/>
 
         <!-- actions -->
 
-        <menuitem name="List" id="authority_management.menu_1_list" parent="authority_management.menu_1"
-                  action="authority_management.action_window"/>
+        <menuitem name="List" id="authority_management_menu_1_list" parent="authority_management_menu_1"
+                  action="authority_management_action_window"/>
 
     </data>
 </odoo>
